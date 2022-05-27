@@ -23,8 +23,9 @@ type RequestOptions = {
   params: RouteParams;
   queryShop: (args: QueryShopArgs) => Promise<any>;
   session: SessionApi | null;
+  hydrogenConfig: HydrogenConfig;
 };
-type ResourceGetter = (
+export type ResourceGetter = (
   request: Request,
   requestOptions: RequestOptions
 ) => Promise<Response | Object | String>;
@@ -195,8 +196,14 @@ function queryShopBuilder(
 export async function renderApiRoute(
   request: ServerComponentRequest,
   route: ApiRouteMatch,
-  shopifyConfig: HydrogenConfig['shopify'],
-  session?: SessionStorageAdapter
+  hydrogenConfig: HydrogenConfig,
+  {
+    session,
+    suppressLog,
+  }: {
+    session?: SessionStorageAdapter;
+    suppressLog?: boolean;
+  }
 ): Promise<Response | Request> {
   let response;
   const log = getLoggerWithContext(request);
@@ -205,7 +212,8 @@ export async function renderApiRoute(
   try {
     response = await route.resource(request, {
       params: route.params,
-      queryShop: queryShopBuilder(shopifyConfig, request),
+      queryShop: queryShopBuilder(hydrogenConfig.shopify, request),
+      hydrogenConfig,
       session: session
         ? {
             async get() {
@@ -247,11 +255,13 @@ export async function renderApiRoute(
     response = new Response('Error processing: ' + request.url, {status: 500});
   }
 
-  logServerResponse(
-    'api',
-    request as ServerComponentRequest,
-    (response as Response).status ?? 200
-  );
+  if (!suppressLog) {
+    logServerResponse(
+      'api',
+      request as ServerComponentRequest,
+      (response as Response).status ?? 200
+    );
+  }
 
   return response;
 }

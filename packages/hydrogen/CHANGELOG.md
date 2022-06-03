@@ -1,5 +1,127 @@
 # Changelog
 
+## 0.23.0
+
+### Minor Changes
+
+- [#1389](https://github.com/Shopify/hydrogen/pull/1389) [`9a21108f`](https://github.com/Shopify/hydrogen/commit/9a21108f6ff89474db9ff8bec26733fcbe744bdc) Thanks [@blittle](https://github.com/blittle)! - **Breaking change**
+
+  The utility `isClient` has been renamed to `isBrowser`. This is because the utility really checks if the running context is a browser, _not_ if the context is a client component.
+
+  All client components by default also run on the server when they are server rendered. If you don't want that to happen, use the `isBrowser()` hook. Remember that anything not server rendered will be unavailable for SEO bots.
+
+* [#1403](https://github.com/Shopify/hydrogen/pull/1403) [`979f8177`](https://github.com/Shopify/hydrogen/commit/979f81775a4bfa83276030da07cb012e6cb08e2f) Thanks [@frandiox](https://github.com/frandiox)! - **Breaking change**: The `setLogger` and `setLoggerOptions` utilities have been removed. The same information can now be passed under the `logger` property in Hydrogen config:
+
+  ```diff
+  // App.server.jsx
+
+  -import {setLogger, setLoggerOptions} from '@shopify/hydrogen';
+
+  -setLogger({
+  -  trace() {},
+  -  error() {},
+  -  // ...
+  -});
+
+  -setLoggerOptions({
+  -  showQueryTiming: true,
+  -  showCacheControlHeader: true,
+  -  // ...
+  -});
+
+  function App() {
+    // ...
+  }
+
+  export default renderHydrogen(App);
+  ```
+
+  ```diff
+  // hydrogen.config.js
+
+  export default defineConfig({
+    // ...
+  + logger: {
+  +   trace() {},
+  +   error() {},
+  +   showQueryTiming: true,
+  +   showCacheControlHeader: true,
+  +   // ...
+  + },
+  });
+  ```
+
+- [#1418](https://github.com/Shopify/hydrogen/pull/1418) [`512cb009`](https://github.com/Shopify/hydrogen/commit/512cb009fadeb1907fafa2cef8b568081799335f) Thanks [@frandiox](https://github.com/frandiox)! - **Breaking change**: The client configuration, including the `strictMode` option, has been moved from custom client entry handlers to the Hydrogen configuration file. If you had a custom client entry file just to pass client options, you can remove it and do the same in `hydrogen.config.js`:
+
+  ```diff
+  // Custom client entry handler
+
+  -renderHydrogen(ClientWrapper, {strictMode: false});
+  +renderHydrogen(ClientWrapper);
+  ```
+
+  ```diff
+  // hydrogen.config.jsx
+
+  export default defineConfig({
+  +  strictMode: false,
+  });
+  ```
+
+  To remove a custom client entry handler in case it's not needed anymore, delete the custom file and change `index.html`:
+
+  ```diff
+  <body>
+    <div id="root"></div>
+  - <script type="module" src="/src/custom-client-entry"></script>
+  + <script type="module" src="/@shopify/hydrogen/entry-client"></script>
+  </body>
+  ```
+
+* [#1401](https://github.com/Shopify/hydrogen/pull/1401) [`335b70ce`](https://github.com/Shopify/hydrogen/commit/335b70ce67f9f137875fcd18f32e00c1b1b4c533) Thanks [@frandiox](https://github.com/frandiox)! - **Breaking change**: The `enableStreaming` config option has been deprecated. The same feature can be done directly in the app:
+
+  ```diff
+  // hydrogen.config.js
+
+  export default defineConfig({
+    shopify: {
+      // ...
+    },
+  - enableStreaming: (req) => {
+  -   return req.headers.get('user-agent') !== 'custom bot';
+  - },
+  });
+  ```
+
+  ```diff
+  // App.server.jsx
+
+  -function App() {
+  +function App({request, response}) {
+  + if (request.headers.get('user-agent') === 'custom bot') {
+  +   response.doNotStream();
+  + }
+
+    return <Suspense fallback={'Loading...'}>{/*...*/}</Suspense>;
+  }
+
+  export default renderHydrogen(App);
+  ```
+
+### Patch Changes
+
+- [#1425](https://github.com/Shopify/hydrogen/pull/1425) [`e213aa86`](https://github.com/Shopify/hydrogen/commit/e213aa8656b17bf649fef714befa99b9618aae45) Thanks [@frandiox](https://github.com/frandiox)! - Rename internal Hydrogen global variables that could conflict with third party libraries that use the same names.
+
+* [#1361](https://github.com/Shopify/hydrogen/pull/1361) [`cf2ef664`](https://github.com/Shopify/hydrogen/commit/cf2ef664cd1e91bc53fc34698ac23797c398e74f) Thanks [@frandiox](https://github.com/frandiox)! - Improve component bundling to reduce the total amount of JS files downloaded in the browser.
+
+- [#1399](https://github.com/Shopify/hydrogen/pull/1399) [`583ce40c`](https://github.com/Shopify/hydrogen/commit/583ce40c97391bb22e6e15e736e6237e9a1ea085) Thanks [@frandiox](https://github.com/frandiox)! - Confusing warnings that are not actionable have been removed.
+
+* [#1227](https://github.com/Shopify/hydrogen/pull/1227) [`8eae0a07`](https://github.com/Shopify/hydrogen/commit/8eae0a07ab02e61ac8742e42488825090ca0aa37) Thanks [@jplhomer](https://github.com/jplhomer)! - Enable streaming by default for all platforms
+
+- [#1424](https://github.com/Shopify/hydrogen/pull/1424) [`446c12bf`](https://github.com/Shopify/hydrogen/commit/446c12bffa08eadccfd27afe8b5f34c77a61d134) Thanks [@frandiox](https://github.com/frandiox)! - Custom loggers can return promises from their methods. Hydrogen will await for them after the current request is over but before the runtime instance ends.
+
+* [#1423](https://github.com/Shopify/hydrogen/pull/1423) [`aaf9efa4`](https://github.com/Shopify/hydrogen/commit/aaf9efa45dc9453e95be8e3020c259368ac5f4d0) Thanks [@frandiox](https://github.com/frandiox)! - Workers context (e.g. `waitUntil`) is now scoped to the current request instead of globally available.
+
 ## 0.22.1
 
 ### Patch Changes
